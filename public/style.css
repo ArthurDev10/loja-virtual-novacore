@@ -424,6 +424,26 @@ p {
   fill: #ffffff;
 }
 
+.site-footer {
+  border-top: 1px solid rgba(140, 190, 255, 0.15);
+  padding: 28px 0;
+  text-align: center;
+}
+
+.footer-inner p {
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.footer-inner p + p {
+  margin-top: 6px;
+}
+
+.footer-inner strong {
+  color: var(--text-main);
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(24px);
