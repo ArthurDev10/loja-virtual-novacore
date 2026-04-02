@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://novacore-it.onrender.com/sitemap.xml
