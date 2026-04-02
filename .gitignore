@@ -1,0 +1,4 @@
+node_modules/
+novacore.db
+novacore.db-shm
+novacore.db-wal
