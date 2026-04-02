@@ -306,6 +306,18 @@ p {
   font-size: 1rem;
 }
 
+.price-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(26, 140, 255, 0.25), rgba(14, 106, 232, 0.15));
+  border: 1px solid rgba(38, 168, 255, 0.35);
+  color: #26a8ff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
 .contact-box {
   display: flex;
   justify-content: space-between;
