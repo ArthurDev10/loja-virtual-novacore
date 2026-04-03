@@ -77,3 +77,46 @@ if (form) {
     }
   });
 }
+
+// Popup WhatsApp - captura lead antes de redirecionar
+const btnWhatsapp = document.getElementById('btnWhatsapp');
+const wppOverlay = document.getElementById('wppOverlay');
+const wppClose = document.getElementById('wppClose');
+const wppForm = document.getElementById('wppForm');
+
+if (btnWhatsapp && wppOverlay) {
+  btnWhatsapp.addEventListener('click', () => {
+    wppOverlay.classList.add('active');
+  });
+
+  wppClose.addEventListener('click', () => {
+    wppOverlay.classList.remove('active');
+  });
+
+  wppOverlay.addEventListener('click', (e) => {
+    if (e.target === wppOverlay) wppOverlay.classList.remove('active');
+  });
+
+  wppForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('wppNome').value.trim();
+    const telefone = document.getElementById('wppTel').value.trim();
+
+    if (!nome || !telefone) return;
+
+    // Salvar lead no banco (não bloqueia o redirecionamento)
+    fetch('/api/lead-whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, telefone }),
+    }).catch(() => {});
+
+    // Redirecionar para o WhatsApp
+    const texto = `Olá, meu nome é ${nome} e vim pelo site. Gostaria de solicitar um orçamento!`;
+    const url = `https://wa.me/5527998090137?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+
+    wppForm.reset();
+    wppOverlay.classList.remove('active');
+  });
+}

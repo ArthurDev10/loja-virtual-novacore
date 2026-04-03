@@ -302,6 +302,36 @@
       th, td { padding: 10px 10px; font-size: 0.85rem; }
       .msg-cell { max-width: 160px; }
     }
+
+    /* Tabs */
+    .tabs {
+      width: min(1200px, 94vw);
+      margin: 24px auto 0;
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      padding: 11px 22px;
+      border-radius: 10px 10px 0 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid rgba(132,186,255,0.16);
+      border-bottom: none;
+      background: rgba(9,38,118,0.4);
+      color: var(--text-soft);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab-btn.active {
+      background: rgba(9,38,118,0.85);
+      color: #26a8ff;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
   </style>
 </head>
 <body>
@@ -344,10 +374,27 @@
         <div class="number" id="statSemana">0</div>
         <div class="label">Últimos 7 dias</div>
       </div>
+      <div class="stat-card">
+        <div class="number" id="statLeads">0</div>
+        <div class="label">Leads WhatsApp</div>
+      </div>
     </div>
 
-    <div class="table-wrap" id="tableWrap">
-      <!-- tabela renderizada via JS -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="orcamentos">📋 Orçamentos</button>
+      <button class="tab-btn" data-tab="leads">💬 Leads WhatsApp</button>
+    </div>
+
+    <div class="tab-content active" id="tab-orcamentos">
+      <div class="table-wrap" id="tableWrap">
+        <!-- tabela orçamentos -->
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-leads">
+      <div class="table-wrap" id="leadsWrap">
+        <!-- tabela leads -->
+      </div>
     </div>
   </div>
 
@@ -402,12 +449,26 @@
     });
 
     // REFRESH
-    document.getElementById('btnRefresh').addEventListener('click', loadOrcamentos);
+    document.getElementById('btnRefresh').addEventListener('click', loadAll);
+
+    // TABS
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
 
     async function showPanel() {
       loginScreen.style.display = 'none';
       panel.style.display = 'block';
-      await loadOrcamentos();
+      await loadAll();
+    }
+
+    async function loadAll() {
+      await Promise.all([loadOrcamentos(), loadLeads()]);
     }
 
     async function loadOrcamentos() {
@@ -512,6 +573,67 @@
       const el = document.createElement('span');
       el.textContent = text;
       return el.innerHTML;
+    }
+
+    // ---- LEADS WHATSAPP ----
+    async function loadLeads() {
+      const wrap = document.getElementById('leadsWrap');
+      try {
+        const res = await fetch('/api/leads-whatsapp', {
+          headers: { 'Authorization': 'Bearer ' + authToken },
+        });
+        if (!res.ok) return;
+        const rows = await res.json();
+        document.getElementById('statLeads').textContent = rows.length;
+        renderLeads(rows);
+      } catch {
+        wrap.innerHTML = '<p class="empty-state">Erro ao carregar leads.</p>';
+      }
+    }
+
+    function renderLeads(rows) {
+      const wrap = document.getElementById('leadsWrap');
+      if (!rows.length) {
+        wrap.innerHTML = '<p class="empty-state">Nenhum lead do WhatsApp ainda.</p>';
+        return;
+      }
+
+      let html = `<table>
+        <thead><tr>
+          <th>Nome</th><th>Telefone</th><th>Data</th><th></th>
+        </tr></thead><tbody>`;
+
+      for (const r of rows) {
+        const tel = escapeHtml(r.telefone || '');
+        const telLimpo = tel.replace(/\D/g, '');
+        const whatsLink = telLimpo.length >= 10
+          ? `<a class="whatsapp-link" href="https://wa.me/55${telLimpo}" target="_blank">${tel}</a>`
+          : escapeHtml(tel);
+
+        html += `<tr>
+          <td>${escapeHtml(r.nome)}</td>
+          <td>${whatsLink}</td>
+          <td class="date-cell">${formatDate(r.criado_em)}</td>
+          <td><button class="btn-delete" onclick="deleteLead(${r.id})">Excluir</button></td>
+        </tr>`;
+      }
+
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    }
+
+    async function deleteLead(id) {
+      if (!confirm('Excluir este lead?')) return;
+      try {
+        const res = await fetch('/api/leads-whatsapp/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + authToken },
+        });
+        if (res.ok) loadLeads();
+        else alert('Erro ao excluir.');
+      } catch {
+        alert('Erro de conexão.');
+      }
     }
   </script>
 </body>

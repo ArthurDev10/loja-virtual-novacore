@@ -71,6 +71,14 @@ async function initDB() {
       criado_em TEXT DEFAULT (datetime('now', 'localtime'))
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS leads_whatsapp (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      telefone TEXT NOT NULL,
+      criado_em TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+  `);
   console.log('Banco Turso conectado.');
 }
 
@@ -169,6 +177,57 @@ app.post('/api/orcamento', async (req, res) => {
   } catch (err) {
     console.error('Erro ao salvar orçamento:', err.message);
     res.status(500).json({ erro: 'Erro ao salvar orçamento.' });
+  }
+});
+
+// API - Registrar lead do WhatsApp
+app.post('/api/lead-whatsapp', async (req, res) => {
+  const { nome, telefone } = req.body;
+  if (!nome || !telefone) {
+    return res.status(400).json({ erro: 'Nome e telefone são obrigatórios.' });
+  }
+  const dados = {
+    nome: String(nome).trim().slice(0, 200),
+    telefone: String(telefone).trim().slice(0, 30),
+  };
+  try {
+    await db.execute({
+      sql: 'INSERT INTO leads_whatsapp (nome, telefone) VALUES (?, ?)',
+      args: [dados.nome, dados.telefone],
+    });
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao salvar lead:', err.message);
+    res.status(500).json({ erro: 'Erro ao salvar lead.' });
+  }
+});
+
+// API - Listar leads WhatsApp (protegido)
+app.get('/api/leads-whatsapp', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM leads_whatsapp ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar leads:', err.message);
+    res.status(500).json({ erro: 'Erro ao listar leads.' });
+  }
+});
+
+// API - Excluir lead (protegido)
+app.delete('/api/leads-whatsapp/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ erro: 'ID inválido.' });
+  }
+  try {
+    const result = await db.execute({ sql: 'DELETE FROM leads_whatsapp WHERE id = ?', args: [id] });
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ erro: 'Lead não encontrado.' });
+    }
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao excluir lead:', err.message);
+    res.status(500).json({ erro: 'Erro ao excluir lead.' });
   }
 });
 
