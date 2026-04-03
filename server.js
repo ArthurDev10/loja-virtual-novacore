@@ -1,11 +1,52 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const Database = require('better-sqlite3');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASS = process.env.ADMIN_PASS || 'novacore2026';
+
+// Configuração de e-mail
+const EMAIL_USER = process.env.EMAIL_USER; // seu Gmail
+const EMAIL_PASS = process.env.EMAIL_PASS; // senha de app do Gmail
+const EMAIL_TO = process.env.EMAIL_TO || 'arthurodev10@gmail.com';
+
+let transporter = null;
+if (EMAIL_USER && EMAIL_PASS) {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+  });
+}
+
+async function enviarNotificacao(dados) {
+  if (!transporter) return;
+  try {
+    await transporter.sendMail({
+      from: `"NovaCore IT" <${EMAIL_USER}>`,
+      to: EMAIL_TO,
+      subject: `📋 Novo orçamento de ${dados.nome}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#f4f7fb;border-radius:12px;">
+          <h2 style="color:#0e6ae8;margin-top:0;">Novo Orçamento Recebido!</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Nome:</td><td style="padding:8px 0;color:#555;">${dados.nome}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Telefone:</td><td style="padding:8px 0;color:#555;">${dados.telefone}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Serviço:</td><td style="padding:8px 0;color:#555;">${dados.servico || 'Não informado'}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Mensagem:</td><td style="padding:8px 0;color:#555;">${dados.mensagem || 'Nenhuma'}</td></tr>
+          </table>
+          <hr style="border:none;border-top:1px solid #ddd;margin:16px 0;">
+          <p style="color:#888;font-size:13px;">Acesse o painel admin para gerenciar: <a href="https://novacore-it.onrender.com/admin.html">Painel Admin</a></p>
+        </div>
+      `,
+    });
+    console.log('E-mail de notificação enviado.');
+  } catch (err) {
+    console.error('Erro ao enviar e-mail:', err.message);
+  }
+}
 
 // Sessões admin em memória
 const sessions = new Map();
@@ -114,6 +155,9 @@ app.post('/api/orcamento', (req, res) => {
     'INSERT INTO orcamentos (nome, telefone, servico, mensagem) VALUES (?, ?, ?, ?)'
   );
   const result = stmt.run(dados.nome, dados.telefone, dados.servico, dados.mensagem);
+
+  // Enviar notificação por e-mail (não bloqueia a resposta)
+  enviarNotificacao(dados);
 
   res.json({ sucesso: true, id: result.lastInsertRowid });
 });
