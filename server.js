@@ -2,15 +2,15 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const Database = require('better-sqlite3');
+const { createClient } = require('@libsql/client');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASS = process.env.ADMIN_PASS || 'novacore2026';
 
 // Configuração de e-mail
-const EMAIL_USER = process.env.EMAIL_USER; // seu Gmail
-const EMAIL_PASS = process.env.EMAIL_PASS; // senha de app do Gmail
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 const EMAIL_TO = process.env.EMAIL_TO || 'arthurodev10@gmail.com';
 
 let transporter = null;
@@ -54,20 +54,25 @@ const LOGIN_ATTEMPTS = new Map();
 const MAX_ATTEMPTS = 5;
 const BLOCK_TIME = 15 * 60 * 1000; // 15 minutos
 
-// Banco de dados
-const db = new Database(path.join(__dirname, 'novacore.db'));
-db.pragma('journal_mode = WAL');
+// Banco de dados Turso (nuvem)
+const db = createClient({
+  url: process.env.TURSO_URL || 'libsql://novacore-arthurdev10.aws-us-east-1.turso.io',
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS orcamentos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    telefone TEXT NOT NULL,
-    servico TEXT,
-    mensagem TEXT,
-    criado_em TEXT DEFAULT (datetime('now', 'localtime'))
-  )
-`);
+async function initDB() {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS orcamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      telefone TEXT NOT NULL,
+      servico TEXT,
+      mensagem TEXT,
+      criado_em TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+  `);
+  console.log('Banco Turso conectado.');
+}
 
 // Middlewares
 app.use(express.json());
@@ -136,7 +141,7 @@ app.post('/api/admin/logout', requireAdmin, (req, res) => {
 });
 
 // API - Receber orçamento
-app.post('/api/orcamento', (req, res) => {
+app.post('/api/orcamento', async (req, res) => {
   const { nome, telefone, servico, mensagem } = req.body;
 
   if (!nome || !telefone) {
@@ -151,36 +156,56 @@ app.post('/api/orcamento', (req, res) => {
     mensagem: mensagem ? String(mensagem).trim().slice(0, 1000) : null,
   };
 
-  const stmt = db.prepare(
-    'INSERT INTO orcamentos (nome, telefone, servico, mensagem) VALUES (?, ?, ?, ?)'
-  );
-  const result = stmt.run(dados.nome, dados.telefone, dados.servico, dados.mensagem);
+  try {
+    const result = await db.execute({
+      sql: 'INSERT INTO orcamentos (nome, telefone, servico, mensagem) VALUES (?, ?, ?, ?)',
+      args: [dados.nome, dados.telefone, dados.servico, dados.mensagem],
+    });
 
-  // Enviar notificação por e-mail (não bloqueia a resposta)
-  enviarNotificacao(dados);
+    // Enviar notificação por e-mail (não bloqueia a resposta)
+    enviarNotificacao(dados);
 
-  res.json({ sucesso: true, id: result.lastInsertRowid });
+    res.json({ sucesso: true, id: Number(result.lastInsertRowid) });
+  } catch (err) {
+    console.error('Erro ao salvar orçamento:', err.message);
+    res.status(500).json({ erro: 'Erro ao salvar orçamento.' });
+  }
 });
 
 // API - Listar orçamentos (protegido)
-app.get('/api/orcamentos', requireAdmin, (req, res) => {
-  const rows = db.prepare('SELECT * FROM orcamentos ORDER BY id DESC').all();
-  res.json(rows);
+app.get('/api/orcamentos', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM orcamentos ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar orçamentos:', err.message);
+    res.status(500).json({ erro: 'Erro ao listar orçamentos.' });
+  }
 });
 
 // API - Excluir orçamento (protegido)
-app.delete('/api/orcamentos/:id', requireAdmin, (req, res) => {
+app.delete('/api/orcamentos/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) {
     return res.status(400).json({ erro: 'ID inválido.' });
   }
-  const result = db.prepare('DELETE FROM orcamentos WHERE id = ?').run(id);
-  if (result.changes === 0) {
-    return res.status(404).json({ erro: 'Orçamento não encontrado.' });
+  try {
+    const result = await db.execute({ sql: 'DELETE FROM orcamentos WHERE id = ?', args: [id] });
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ erro: 'Orçamento não encontrado.' });
+    }
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao excluir orçamento:', err.message);
+    res.status(500).json({ erro: 'Erro ao excluir orçamento.' });
   }
-  res.json({ sucesso: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}).catch((err) => {
+  console.error('Erro ao conectar ao banco:', err.message);
+  process.exit(1);
 });
