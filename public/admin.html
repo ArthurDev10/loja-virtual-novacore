@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Painel Admin | NovaCore IT</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #000728;
+      --bg-main: #021057;
+      --text-main: #deefff;
+      --text-soft: #9cc0e8;
+      --accent: #1a8cff;
+      --accent-strong: #0e6ae8;
+      --card: #082573;
+      --line: rgba(128,181,255,0.24);
+      --ok: #19c271;
+      --danger: #ff5c5c;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(160deg, #000318 0%, var(--bg-main) 42%, #00134f 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    /* ---- LOGIN ---- */
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-box {
+      background: linear-gradient(180deg, rgba(9,38,118,0.85), rgba(6,23,84,0.95));
+      border: 1px solid rgba(132,186,255,0.18);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-box h1 {
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+    }
+
+    .login-box .sub {
+      color: var(--text-soft);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(132,186,255,0.2);
+      background: rgba(6,23,84,0.9);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      margin-bottom: 16px;
+    }
+
+    .login-box input:focus { border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-weight: 700;
+      padding: 13px 28px;
+      font-size: 1rem;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(13,104,230,0.4);
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+
+    .login-msg {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--danger);
+      min-height: 22px;
+    }
+
+    /* ---- PAINEL ---- */
+    .panel { display: none; }
+
+    .panel-header {
+      background: rgba(0,6,29,0.85);
+      border-bottom: 1px solid rgba(135,186,255,0.1);
+      padding: 18px 0;
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .panel-header .inner {
+      width: min(1200px, 94vw);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .panel-header h1 {
+      font-size: 1.35rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-sm {
+      padding: 9px 18px;
+      font-size: 0.88rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-refresh {
+      background: rgba(26,140,255,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(26,140,255,0.3);
+    }
+
+    .btn-logout {
+      background: rgba(255,92,92,0.12);
+      color: var(--danger);
+      border: 1px solid rgba(255,92,92,0.25);
+    }
+
+    /* ---- STATS ---- */
+    .stats-row {
+      width: min(1200px, 94vw);
+      margin: 28px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, rgba(9,38,118,0.82), rgba(6,23,84,0.9));
+      border: 1px solid rgba(132,186,255,0.16);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+
+    .stat-card .number {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #26a8ff;
+    }
+
+    .stat-card .label {
+      font-size: 0.88rem;
+      color: var(--text-soft);
+      margin-top: 2px;
+    }
+
+    /* ---- TABELA ---- */
+    .table-wrap {
+      width: min(1200px, 94vw);
+      margin: 24px auto 40px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    thead {
+      background: rgba(9,38,118,0.9);
+    }
+
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #26a8ff;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(132,186,255,0.08);
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+      background: rgba(26,140,255,0.06);
+    }
+
+    td {
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      color: var(--text-soft);
+      vertical-align: top;
+    }
+
+    td:first-child {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .msg-cell {
+      max-width: 280px;
+      word-break: break-word;
+    }
+
+    .date-cell {
+      white-space: nowrap;
+      font-size: 0.85rem;
+    }
+
+    .btn-delete {
+      background: rgba(255,92,92,0.12);
+      color: var(--danger);
+      border: 1px solid rgba(255,92,92,0.25);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-delete:hover {
+      background: rgba(255,92,92,0.25);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-soft);
+      font-size: 1.1rem;
+    }
+
+    .whatsapp-link {
+      color: var(--ok);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .whatsapp-link:hover {
+      text-decoration: underline;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(26,140,255,0.15);
+      color: #26a8ff;
+      border: 1px solid rgba(26,140,255,0.25);
+    }
+
+    @media (max-width: 700px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      th, td { padding: 10px 10px; font-size: 0.85rem; }
+      .msg-cell { max-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <h1>🔒 Painel Admin</h1>
+      <p class="sub">NovaCore IT — Acesso restrito</p>
+      <form id="loginForm">
+        <input type="password" id="senhaInput" placeholder="Digite a senha" autocomplete="current-password" required />
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </form>
+      <p class="login-msg" id="loginMsg"></p>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div class="panel" id="panel">
+    <header class="panel-header">
+      <div class="inner">
+        <h1>📋 Orçamentos</h1>
+        <div class="header-actions">
+          <button class="btn-sm btn-refresh" id="btnRefresh">↻ Atualizar</button>
+          <button class="btn-sm btn-logout" id="btnLogout">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="number" id="statTotal">0</div>
+        <div class="label">Total de orçamentos</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="statHoje">0</div>
+        <div class="label">Hoje</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="statSemana">0</div>
+        <div class="label">Últimos 7 dias</div>
+      </div>
+    </div>
+
+    <div class="table-wrap" id="tableWrap">
+      <!-- tabela renderizada via JS -->
+    </div>
+  </div>
+
+  <script>
+    let authToken = sessionStorage.getItem('admin_token') || null;
+
+    const loginScreen = document.getElementById('loginScreen');
+    const panel = document.getElementById('panel');
+
+    // Se já tem token salvo, tenta entrar direto
+    if (authToken) showPanel();
+
+    // LOGIN
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('loginMsg');
+      msg.textContent = '';
+      const senha = document.getElementById('senhaInput').value;
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senha }),
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+          authToken = data.token;
+          sessionStorage.setItem('admin_token', authToken);
+          showPanel();
+        } else {
+          msg.textContent = data.erro || 'Senha incorreta.';
+        }
+      } catch {
+        msg.textContent = 'Erro de conexão.';
+      }
+    });
+
+    // LOGOUT
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + authToken },
+        });
+      } catch {}
+      authToken = null;
+      sessionStorage.removeItem('admin_token');
+      panel.style.display = 'none';
+      loginScreen.style.display = 'flex';
+      document.getElementById('senhaInput').value = '';
+    });
+
+    // REFRESH
+    document.getElementById('btnRefresh').addEventListener('click', loadOrcamentos);
+
+    async function showPanel() {
+      loginScreen.style.display = 'none';
+      panel.style.display = 'block';
+      await loadOrcamentos();
+    }
+
+    async function loadOrcamentos() {
+      const wrap = document.getElementById('tableWrap');
+      try {
+        const res = await fetch('/api/orcamentos', {
+          headers: { 'Authorization': 'Bearer ' + authToken },
+        });
+        if (res.status === 401) {
+          // Token inválido ou expirado
+          authToken = null;
+          sessionStorage.removeItem('admin_token');
+          panel.style.display = 'none';
+          loginScreen.style.display = 'flex';
+          document.getElementById('loginMsg').textContent = 'Sessão expirada. Faça login novamente.';
+          return;
+        }
+        const rows = await res.json();
+        updateStats(rows);
+        renderTable(rows);
+      } catch {
+        wrap.innerHTML = '<p class="empty-state">Erro ao carregar orçamentos.</p>';
+      }
+    }
+
+    function updateStats(rows) {
+      document.getElementById('statTotal').textContent = rows.length;
+
+      const hoje = new Date().toISOString().slice(0, 10);
+      const semanaAtras = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+
+      let countHoje = 0, countSemana = 0;
+      for (const r of rows) {
+        const d = (r.criado_em || '').slice(0, 10);
+        if (d === hoje) countHoje++;
+        if (d >= semanaAtras) countSemana++;
+      }
+      document.getElementById('statHoje').textContent = countHoje;
+      document.getElementById('statSemana').textContent = countSemana;
+    }
+
+    function renderTable(rows) {
+      const wrap = document.getElementById('tableWrap');
+      if (!rows.length) {
+        wrap.innerHTML = '<p class="empty-state">Nenhum orçamento recebido ainda.</p>';
+        return;
+      }
+
+      let html = `<table>
+        <thead><tr>
+          <th>Nome</th><th>Telefone</th><th>Serviço</th><th>Mensagem</th><th>Data</th><th></th>
+        </tr></thead><tbody>`;
+
+      for (const r of rows) {
+        const tel = escapeHtml(r.telefone || '');
+        const telLimpo = tel.replace(/\D/g, '');
+        const whatsLink = telLimpo.length >= 10
+          ? `<a class="whatsapp-link" href="https://wa.me/55${telLimpo}" target="_blank">${tel}</a>`
+          : escapeHtml(tel);
+
+        html += `<tr>
+          <td>${escapeHtml(r.nome)}</td>
+          <td>${whatsLink}</td>
+          <td>${r.servico ? `<span class="badge">${escapeHtml(r.servico)}</span>` : '—'}</td>
+          <td class="msg-cell">${escapeHtml(r.mensagem || '—')}</td>
+          <td class="date-cell">${formatDate(r.criado_em)}</td>
+          <td><button class="btn-delete" onclick="deleteOrc(${r.id})">Excluir</button></td>
+        </tr>`;
+      }
+
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    }
+
+    async function deleteOrc(id) {
+      if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
+      try {
+        const res = await fetch('/api/orcamentos/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + authToken },
+        });
+        if (res.ok) {
+          loadOrcamentos();
+        } else {
+          const data = await res.json();
+          alert(data.erro || 'Erro ao excluir.');
+        }
+      } catch {
+        alert('Erro de conexão.');
+      }
+    }
+
+    function formatDate(str) {
+      if (!str) return '—';
+      const [date, time] = str.split(' ');
+      if (!date) return str;
+      const [y, m, d] = date.split('-');
+      return `${d}/${m}/${y}` + (time ? ` ${time.slice(0, 5)}` : '');
+    }
+
+    function escapeHtml(text) {
+      const el = document.createElement('span');
+      el.textContent = text;
+      return el.innerHTML;
+    }
+  </script>
+</body>
+</html>
