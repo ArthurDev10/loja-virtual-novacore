@@ -76,9 +76,14 @@ async function initDB() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT NOT NULL,
       telefone TEXT NOT NULL,
+      servico TEXT,
       criado_em TEXT DEFAULT (datetime('now', 'localtime'))
     )
   `);
+  // Adicionar coluna servico se não existir (migração)
+  try {
+    await db.execute(`ALTER TABLE leads_whatsapp ADD COLUMN servico TEXT`);
+  } catch {}
   console.log('Banco Turso conectado.');
 }
 
@@ -182,18 +187,19 @@ app.post('/api/orcamento', async (req, res) => {
 
 // API - Registrar lead do WhatsApp
 app.post('/api/lead-whatsapp', async (req, res) => {
-  const { nome, telefone } = req.body;
+  const { nome, telefone, servico } = req.body;
   if (!nome || !telefone) {
     return res.status(400).json({ erro: 'Nome e telefone são obrigatórios.' });
   }
   const dados = {
     nome: String(nome).trim().slice(0, 200),
     telefone: String(telefone).trim().slice(0, 30),
+    servico: servico ? String(servico).trim().slice(0, 200) : null,
   };
   try {
     await db.execute({
-      sql: 'INSERT INTO leads_whatsapp (nome, telefone) VALUES (?, ?)',
-      args: [dados.nome, dados.telefone],
+      sql: 'INSERT INTO leads_whatsapp (nome, telefone, servico) VALUES (?, ?, ?)',
+      args: [dados.nome, dados.telefone, dados.servico],
     });
     res.json({ sucesso: true });
   } catch (err) {

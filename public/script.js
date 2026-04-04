@@ -29,94 +29,60 @@ const observer = new IntersectionObserver(
 
 document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
 
-// Formulário de orçamento
-const form = document.getElementById('formOrcamento');
-if (form) {
-  form.addEventListener('submit', async (e) => {
+// WhatsApp Popup
+const wppBtn = document.getElementById('wppBtn');
+const wppOverlay = document.getElementById('wppOverlay');
+const wppClose = document.getElementById('wppClose');
+const wppSend = document.getElementById('wppSend');
+const heroCta = document.getElementById('heroCta');
+
+function openPopup() {
+  wppOverlay.classList.add('active');
+}
+
+function closePopup() {
+  wppOverlay.classList.remove('active');
+}
+
+if (wppBtn) wppBtn.addEventListener('click', openPopup);
+if (heroCta) heroCta.addEventListener('click', openPopup);
+if (wppClose) wppClose.addEventListener('click', closePopup);
+
+const navContato = document.getElementById('navContato');
+if (navContato) {
+  navContato.addEventListener('click', (e) => {
     e.preventDefault();
-    const msg = document.getElementById('formMsg');
-    msg.textContent = '';
-    msg.className = 'form-msg';
-
-    const dados = {
-      nome: form.nome.value.trim(),
-      telefone: form.telefone.value.trim(),
-      servico: form.servico.value,
-      mensagem: form.mensagem.value.trim(),
-    };
-
-    try {
-      const res = await fetch('/api/orcamento', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados),
-      });
-      const json = await res.json();
-      if (json.sucesso) {
-        msg.textContent = 'Orçamento enviado! Redirecionando para o WhatsApp...';
-        msg.classList.add('success');
-
-        // Monta mensagem para o WhatsApp
-        let texto = `Olá, vim pelo site e gostaria de um orçamento!\n\n`;
-        texto += `*Nome:* ${dados.nome}\n`;
-        texto += `*Telefone:* ${dados.telefone}\n`;
-        if (dados.servico) texto += `*Serviço:* ${dados.servico}\n`;
-        if (dados.mensagem) texto += `*Mensagem:* ${dados.mensagem}\n`;
-
-        const url = `https://wa.me/5527998090137?text=${encodeURIComponent(texto)}`;
-
-        form.reset();
-        setTimeout(() => window.open(url, '_blank'), 800);
-      } else {
-        msg.textContent = json.erro || 'Erro ao enviar. Tente novamente.';
-        msg.classList.add('error');
-      }
-    } catch {
-      msg.textContent = 'Erro de conexão. Tente novamente.';
-      msg.classList.add('error');
-    }
+    openPopup();
+  });
+}
+if (wppOverlay) {
+  wppOverlay.addEventListener('click', (e) => {
+    if (e.target === wppOverlay) closePopup();
   });
 }
 
-// Popup WhatsApp - captura lead antes de redirecionar
-const btnWhatsapp = document.getElementById('btnWhatsapp');
-const wppOverlay = document.getElementById('wppOverlay');
-const wppClose = document.getElementById('wppClose');
-const wppForm = document.getElementById('wppForm');
-
-if (btnWhatsapp && wppOverlay) {
-  btnWhatsapp.addEventListener('click', () => {
-    wppOverlay.classList.add('active');
-  });
-
-  wppClose.addEventListener('click', () => {
-    wppOverlay.classList.remove('active');
-  });
-
-  wppOverlay.addEventListener('click', (e) => {
-    if (e.target === wppOverlay) wppOverlay.classList.remove('active');
-  });
-
-  wppForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+if (wppSend) {
+  wppSend.addEventListener('click', () => {
     const nome = document.getElementById('wppNome').value.trim();
-    const telefone = document.getElementById('wppTel').value.trim();
+    const tel = document.getElementById('wppTel').value.trim();
+    const servico = document.getElementById('wppServico').value;
 
-    if (!nome || !telefone) return;
+    let texto = `Olá, vim pelo site e gostaria de um orçamento!\n\n`;
+    if (nome) texto += `*Nome:* ${nome}\n`;
+    if (tel) texto += `*Telefone:* ${tel}\n`;
+    if (servico) texto += `*Serviço:* ${servico}\n`;
 
-    // Salvar lead no banco (não bloqueia o redirecionamento)
-    fetch('/api/lead-whatsapp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, telefone }),
-    }).catch(() => {});
+    // Salva lead no banco
+    if (nome && tel) {
+      fetch('/api/lead-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, telefone: tel, servico }),
+      }).catch(() => {});
+    }
 
-    // Redirecionar para o WhatsApp
-    const texto = `Olá, meu nome é ${nome} e vim pelo site. Gostaria de solicitar um orçamento!`;
     const url = `https://wa.me/5527998090137?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
-
-    wppForm.reset();
-    wppOverlay.classList.remove('active');
+    closePopup();
   });
 }

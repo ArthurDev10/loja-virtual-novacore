@@ -303,35 +303,6 @@
       .msg-cell { max-width: 160px; }
     }
 
-    /* Tabs */
-    .tabs {
-      width: min(1200px, 94vw);
-      margin: 24px auto 0;
-      display: flex;
-      gap: 4px;
-    }
-
-    .tab-btn {
-      padding: 11px 22px;
-      border-radius: 10px 10px 0 0;
-      font-size: 0.95rem;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      border: 1px solid rgba(132,186,255,0.16);
-      border-bottom: none;
-      background: rgba(9,38,118,0.4);
-      color: var(--text-soft);
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .tab-btn.active {
-      background: rgba(9,38,118,0.85);
-      color: #26a8ff;
-    }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
   </style>
 </head>
 <body>
@@ -353,7 +324,7 @@
   <div class="panel" id="panel">
     <header class="panel-header">
       <div class="inner">
-        <h1>📋 Orçamentos</h1>
+        <h1>� Leads WhatsApp</h1>
         <div class="header-actions">
           <button class="btn-sm btn-refresh" id="btnRefresh">↻ Atualizar</button>
           <button class="btn-sm btn-logout" id="btnLogout">Sair</button>
@@ -363,8 +334,8 @@
 
     <div class="stats-row" id="statsRow">
       <div class="stat-card">
-        <div class="number" id="statTotal">0</div>
-        <div class="label">Total de orçamentos</div>
+        <div class="number" id="statLeads">0</div>
+        <div class="label">Total de leads</div>
       </div>
       <div class="stat-card">
         <div class="number" id="statHoje">0</div>
@@ -374,27 +345,10 @@
         <div class="number" id="statSemana">0</div>
         <div class="label">Últimos 7 dias</div>
       </div>
-      <div class="stat-card">
-        <div class="number" id="statLeads">0</div>
-        <div class="label">Leads WhatsApp</div>
-      </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="orcamentos">📋 Orçamentos</button>
-      <button class="tab-btn" data-tab="leads">💬 Leads WhatsApp</button>
-    </div>
-
-    <div class="tab-content active" id="tab-orcamentos">
-      <div class="table-wrap" id="tableWrap">
-        <!-- tabela orçamentos -->
-      </div>
-    </div>
-
-    <div class="tab-content" id="tab-leads">
-      <div class="table-wrap" id="leadsWrap">
-        <!-- tabela leads -->
-      </div>
+    <div class="table-wrap" id="leadsWrap">
+      <!-- tabela leads -->
     </div>
   </div>
 
@@ -449,36 +403,22 @@
     });
 
     // REFRESH
-    document.getElementById('btnRefresh').addEventListener('click', loadAll);
-
-    // TABS
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      });
-    });
+    document.getElementById('btnRefresh').addEventListener('click', loadLeads);
 
     async function showPanel() {
       loginScreen.style.display = 'none';
       panel.style.display = 'block';
-      await loadAll();
+      await loadLeads();
     }
 
-    async function loadAll() {
-      await Promise.all([loadOrcamentos(), loadLeads()]);
-    }
-
-    async function loadOrcamentos() {
-      const wrap = document.getElementById('tableWrap');
+    // ---- LEADS WHATSAPP ----
+    async function loadLeads() {
+      const wrap = document.getElementById('leadsWrap');
       try {
-        const res = await fetch('/api/orcamentos', {
+        const res = await fetch('/api/leads-whatsapp', {
           headers: { 'Authorization': 'Bearer ' + authToken },
         });
         if (res.status === 401) {
-          // Token inválido ou expirado
           authToken = null;
           sessionStorage.removeItem('admin_token');
           panel.style.display = 'none';
@@ -486,16 +426,17 @@
           document.getElementById('loginMsg').textContent = 'Sessão expirada. Faça login novamente.';
           return;
         }
+        if (!res.ok) return;
         const rows = await res.json();
         updateStats(rows);
-        renderTable(rows);
+        renderLeads(rows);
       } catch {
-        wrap.innerHTML = '<p class="empty-state">Erro ao carregar orçamentos.</p>';
+        wrap.innerHTML = '<p class="empty-state">Erro ao carregar leads.</p>';
       }
     }
 
     function updateStats(rows) {
-      document.getElementById('statTotal').textContent = rows.length;
+      document.getElementById('statLeads').textContent = rows.length;
 
       const hoje = new Date().toISOString().slice(0, 10);
       const semanaAtras = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
@@ -508,57 +449,6 @@
       }
       document.getElementById('statHoje').textContent = countHoje;
       document.getElementById('statSemana').textContent = countSemana;
-    }
-
-    function renderTable(rows) {
-      const wrap = document.getElementById('tableWrap');
-      if (!rows.length) {
-        wrap.innerHTML = '<p class="empty-state">Nenhum orçamento recebido ainda.</p>';
-        return;
-      }
-
-      let html = `<table>
-        <thead><tr>
-          <th>Nome</th><th>Telefone</th><th>Serviço</th><th>Mensagem</th><th>Data</th><th></th>
-        </tr></thead><tbody>`;
-
-      for (const r of rows) {
-        const tel = escapeHtml(r.telefone || '');
-        const telLimpo = tel.replace(/\D/g, '');
-        const whatsLink = telLimpo.length >= 10
-          ? `<a class="whatsapp-link" href="https://wa.me/55${telLimpo}" target="_blank">${tel}</a>`
-          : escapeHtml(tel);
-
-        html += `<tr>
-          <td>${escapeHtml(r.nome)}</td>
-          <td>${whatsLink}</td>
-          <td>${r.servico ? `<span class="badge">${escapeHtml(r.servico)}</span>` : '—'}</td>
-          <td class="msg-cell">${escapeHtml(r.mensagem || '—')}</td>
-          <td class="date-cell">${formatDate(r.criado_em)}</td>
-          <td><button class="btn-delete" onclick="deleteOrc(${r.id})">Excluir</button></td>
-        </tr>`;
-      }
-
-      html += '</tbody></table>';
-      wrap.innerHTML = html;
-    }
-
-    async function deleteOrc(id) {
-      if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
-      try {
-        const res = await fetch('/api/orcamentos/' + id, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + authToken },
-        });
-        if (res.ok) {
-          loadOrcamentos();
-        } else {
-          const data = await res.json();
-          alert(data.erro || 'Erro ao excluir.');
-        }
-      } catch {
-        alert('Erro de conexão.');
-      }
     }
 
     function formatDate(str) {
@@ -575,22 +465,6 @@
       return el.innerHTML;
     }
 
-    // ---- LEADS WHATSAPP ----
-    async function loadLeads() {
-      const wrap = document.getElementById('leadsWrap');
-      try {
-        const res = await fetch('/api/leads-whatsapp', {
-          headers: { 'Authorization': 'Bearer ' + authToken },
-        });
-        if (!res.ok) return;
-        const rows = await res.json();
-        document.getElementById('statLeads').textContent = rows.length;
-        renderLeads(rows);
-      } catch {
-        wrap.innerHTML = '<p class="empty-state">Erro ao carregar leads.</p>';
-      }
-    }
-
     function renderLeads(rows) {
       const wrap = document.getElementById('leadsWrap');
       if (!rows.length) {
@@ -600,7 +474,7 @@
 
       let html = `<table>
         <thead><tr>
-          <th>Nome</th><th>Telefone</th><th>Data</th><th></th>
+          <th>Nome</th><th>Telefone</th><th>Serviço</th><th>Data</th><th></th>
         </tr></thead><tbody>`;
 
       for (const r of rows) {
@@ -613,6 +487,7 @@
         html += `<tr>
           <td>${escapeHtml(r.nome)}</td>
           <td>${whatsLink}</td>
+          <td>${r.servico ? `<span class="badge">${escapeHtml(r.servico)}</span>` : '—'}</td>
           <td class="date-cell">${formatDate(r.criado_em)}</td>
           <td><button class="btn-delete" onclick="deleteLead(${r.id})">Excluir</button></td>
         </tr>`;

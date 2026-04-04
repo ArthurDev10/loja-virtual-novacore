@@ -61,7 +61,7 @@
         <a href="#sobre">Sobre</a>
         <a href="#servicos">Serviços</a>
         <a href="#clientes">Clientes</a>
-        <a href="#contato">Contato</a>
+        <a href="#" id="navContato">Contato</a>
         <a href="#faq">FAQ</a>
       </nav>
     </div>
@@ -78,7 +78,7 @@
             Atendimentos de qualidade das 8h às 18h, com suporte remoto e presencial para PC e notebook.
           </p>
           <div class="hero-actions">
-            <a href="#contato" class="btn btn-primary">Solicitar Orçamento</a>
+            <button class="btn btn-primary" id="heroCta">Solicitar Orçamento</button>
             <a href="#servicos" class="btn btn-ghost">Ver Serviços</a>
           </div>
         </div>
@@ -156,42 +156,6 @@
       </div>
     </section>
 
-    <section id="contato" class="section">
-      <div class="container">
-        <h2 class="reveal">Solicitar Orçamento</h2>
-        <p class="section-sub reveal">Preencha o formulário e entraremos em contato pelo WhatsApp.</p>
-        <form id="formOrcamento" class="contact-form reveal">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="nome">Nome</label>
-              <input type="text" id="nome" name="nome" placeholder="Seu nome" required />
-            </div>
-            <div class="form-group">
-              <label for="telefone">Telefone / WhatsApp</label>
-              <input type="tel" id="telefone" name="telefone" placeholder="(27) 99999-9999" required />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="servico">Serviço desejado</label>
-            <select id="servico" name="servico">
-              <option value="">Selecione um serviço</option>
-              <option value="Atendimento Remoto">Atendimento Remoto</option>
-              <option value="Instalação de Office">Instalação de Office</option>
-              <option value="Drivers de Impressora">Drivers de Impressora</option>
-              <option value="Manutenção de Computador e Notebook">Manutenção de Computador e Notebook</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="mensagem">Mensagem (opcional)</label>
-            <textarea id="mensagem" name="mensagem" rows="4" placeholder="Descreva o que precisa..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">Enviar Orçamento</button>
-          <p id="formMsg" class="form-msg"></p>
-        </form>
-      </div>
-    </section>
-
     <section id="faq" class="section section-soft">
       <div class="container">
         <h2 class="reveal">Perguntas Frequentes</h2>
@@ -234,23 +198,33 @@
   </footer>
 
   <!-- Botão WhatsApp flutuante -->
-  <button class="whatsapp-float" id="btnWhatsapp" aria-label="Chamar no WhatsApp">
+  <button
+    class="whatsapp-float"
+    id="wppBtn"
+    aria-label="Chamar no WhatsApp"
+  >
     <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
       <path d="M16.04 4.001c-6.626 0-12 5.373-12 12 0 2.116.553 4.184 1.603 6.01L4 28l6.166-1.616a11.95 11.95 0 0 0 5.874 1.53h.005c6.624 0 12-5.373 12-12s-5.376-11.913-12.005-11.913zm0 21.92h-.004a9.95 9.95 0 0 1-5.077-1.389l-.364-.216-3.66.959.977-3.565-.237-.368a9.95 9.95 0 0 1-1.538-5.332c0-5.514 4.486-10 10.004-10 5.514 0 10 4.486 10 10s-4.486 9.911-10.101 9.911zm5.48-7.497c-.3-.15-1.77-.873-2.043-.972-.273-.1-.472-.15-.67.15-.2.299-.768.972-.942 1.17-.174.199-.348.224-.648.075-.3-.15-1.266-.466-2.411-1.486-.89-.794-1.49-1.775-1.665-2.074-.174-.3-.019-.461.131-.61.135-.134.3-.348.448-.522.15-.174.2-.299.3-.498.1-.2.05-.374-.025-.523-.075-.15-.67-1.62-.917-2.217-.24-.577-.483-.498-.67-.507l-.573-.01a1.1 1.1 0 0 0-.797.374c-.273.3-1.043 1.02-1.043 2.49 0 1.47 1.068 2.888 1.217 3.087.15.199 2.102 3.211 5.093 4.502.712.307 1.267.49 1.7.627.714.228 1.363.196 1.876.119.572-.085 1.77-.723 2.019-1.42.25-.697.25-1.295.174-1.42-.075-.124-.273-.198-.572-.348z" />
     </svg>
   </button>
 
-  <!-- Popup WhatsApp -->
+  <!-- WhatsApp Popup -->
   <div class="wpp-overlay" id="wppOverlay">
     <div class="wpp-popup">
       <button class="wpp-close" id="wppClose">&times;</button>
       <h3>💬 Fale pelo WhatsApp</h3>
       <p>Preencha seus dados para iniciar a conversa:</p>
-      <form id="wppForm">
-        <input type="text" id="wppNome" placeholder="Seu nome" required />
-        <input type="tel" id="wppTel" placeholder="(27) 99999-9999" required />
-        <button type="submit" class="btn btn-primary wpp-btn">Abrir WhatsApp</button>
-      </form>
+      <input type="text" id="wppNome" placeholder="Seu nome" />
+      <input type="tel" id="wppTel" placeholder="(27) 99999-9999" />
+      <select id="wppServico">
+        <option value="">Selecione um serviço</option>
+        <option value="Atendimento Remoto">Atendimento Remoto</option>
+        <option value="Instalação de Office">Instalação de Office</option>
+        <option value="Drivers de Impressora">Drivers de Impressora</option>
+        <option value="Manutenção de Computador e Notebook">Manutenção de Computador e Notebook</option>
+        <option value="Outro">Outro</option>
+      </select>
+      <button class="btn btn-primary wpp-btn" id="wppSend">Abrir WhatsApp</button>
     </div>
   </div>
 
